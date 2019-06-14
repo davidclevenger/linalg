@@ -30,6 +30,7 @@ __row_swap(Matrix* matrix, int r1_index, int r2_index)
     if( r1_index >= matrix->rows
         || r2_index >= matrix->rows )
     {
+        __error_parameter("index out of bounds");
         return; // return error_parameters
     }
 
@@ -51,7 +52,7 @@ __col_swap(Matrix* matrix, int c1_index, int c2_index)
     if( c1_index >= matrix->cols
         || c2_index >= matrix->cols )
     {
-        __error_parameters("__col_swap: index out of bounds\n");
+        __error_parameter("__col_swap: index out of bounds\n");
         return;
     }
 
@@ -71,11 +72,11 @@ __error_dimension(void)
 }
 
 void
-__error_parameters(const char* msg)
+__error_parameter(const char* msg)
 {
     if( msg )
     {
-        fprintf(stderr, msg);
+        fprintf(stderr, "%s\n", msg);
     }
     else
     {
@@ -186,10 +187,28 @@ rref(Matrix* matrix)
                 flag = 1;
                 break;
             }
+
+            for(j = i, k = 0; k <= matrix->cols; k++)
+            {
+                __value_swap(&matrix->data[j][k], &matrix->data[j+c][k]);
+            }
         }
 
-        
+        for(j = 0; j < matrix->rows; j++)
+        {
+            if( i != j )
+            {
+                pro = matrix->data[j][i] / matrix->data[i][i];
+
+                for(k = 0; k < matrix->rows; k++)
+                {
+                    matrix->data[j][k] = matrix->data[j][k] - matrix->data[i][k] * pro;
+                }
+            }
+        }
     }
+
+    //return flag;
 }
 
 void
@@ -210,8 +229,7 @@ transpose(Matrix* matrix)
     del_matrix(matrix);
 
     //TODO this might leak
-    matrix = tranpose;
-
+    matrix = transpose;
 }
 
 Matrix*
@@ -252,8 +270,12 @@ Matrix* inverse(Matrix* matrix)
         }
     }
 
+    print_matrix(inverted);
     Matrix* joined = col_bind(matrix, inverted);
+    print_matrix(joined);
     rref(joined);
+    print_matrix(joined);
+
 
     Matrix* out = subset(joined,
                          inverted->rows,
@@ -302,7 +324,7 @@ subtract(Matrix* lhs, Matrix* rhs)
     if( lhs->rows != rhs->rows
         || lhs->cols != rhs->cols )
     {
-        error_dimension();
+        __error_dimension();
     }
 
     rv = new_matrix(lhs->rows, lhs->cols);
@@ -326,7 +348,7 @@ multiply(Matrix* lhs, Matrix* rhs)
 
     if( lhs->cols != rhs->rows )
     {
-        error_dimension();
+       __error_dimension();
     }
 
     rv = new_matrix(lhs->rows, rhs->cols);
