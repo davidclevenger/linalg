@@ -142,6 +142,11 @@ print_matrix(Matrix* matrix)
         printf("[");
         for(j = 0; j < matrix->cols; j++)
         {   
+			if( matrix->data[i][j] > 0 )
+			{
+				printf(" ");
+			}
+
             if( j < matrix->cols-1 )
             {
                 printf("%.4f ", matrix->data[i][j]);
