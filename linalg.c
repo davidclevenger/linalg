@@ -168,47 +168,40 @@ print_matrix(Matrix* matrix)
 void
 rref(Matrix* matrix)
 {
-    int i, j, k = 0, c, flag = 0, m = 0;
+	int i, j, r, brk;
+	double f, t;
 
-    double pro = 0;
+	if( matrix->rows <= matrix->cols )
+	{
+		brk = matrix->rows;
+	}
+	else
+	{
+		brk = matrix->cols;
+	}
+	
 
-    for(i = 0; i < matrix->cols; i++)
-    {
-        if( matrix->data[i][i] == 0 )
-        {
-            c = 1;
-            while( matrix->data[i+c][i] == 0 && (i+c) < matrix->cols )
-            {
-                c++;
-            }
+	for(r = 0; r < brk; r++)
+	{
+		f = matrix->data[r][r];
+	
+		for(j = 0; j < matrix->cols; j++)
+		{
+			matrix->data[r][j] /= f;
+		}
 
-            if( i + c == matrix->cols )
-            {
-                flag = 1;
-                break;
-            }
+		for(i = 0; i < matrix->rows; i++)
+		{
+			if( i == r ) continue;
 
-            for(j = i, k = 0; k <= matrix->cols; k++)
-            {
-                __value_swap(&matrix->data[j][k], &matrix->data[j+c][k]);
-            }
-        }
+			t = matrix->data[i][r] / matrix->data[r][r];
 
-        for(j = 0; j < matrix->rows; j++)
-        {
-            if( i != j )
-            {
-                pro = matrix->data[j][i] / matrix->data[i][i];
-
-                for(k = 0; k < matrix->rows; k++)
-                {
-                    matrix->data[j][k] = matrix->data[j][k] - matrix->data[i][k] * pro;
-                }
-            }
-        }
-    }
-
-    //return flag;
+			for(j = 0; j < matrix->cols; j++)
+			{
+				matrix->data[i][j] -= t * matrix->data[r][j];
+			}
+		}
+	}
 }
 
 void
@@ -239,7 +232,33 @@ subset(Matrix* matrix,
        int num_rows,
        int num_cols)
 {
-    return NULL;
+	Matrix* out;
+	int i, j;
+
+	if( row_start_index < 0
+		|| col_start_index < 0
+		|| row_start_index >= matrix->rows
+		|| col_start_index >= matrix->cols
+		|| num_rows == 0
+		|| num_cols == 0
+		|| row_start_index + num_rows > matrix->rows
+		|| col_start_index + num_cols > matrix->cols )
+	{
+		__error_parameter("subset: incompatible dimensions.");
+		return NULL;
+	}
+
+	out = new_matrix(num_rows, num_cols);
+
+	for(i = row_start_index; i < row_start_index + num_rows; i++)
+	{
+		for(j = col_start_index; j < col_start_index + num_cols; j++)
+		{
+			out->data[i-row_start_index][j-col_start_index] = matrix->data[i][j];
+		}
+	}
+
+	return out;
 }
 
 Matrix* inverse(Matrix* matrix)
@@ -270,15 +289,15 @@ Matrix* inverse(Matrix* matrix)
         }
     }
 
-    print_matrix(inverted);
     Matrix* joined = col_bind(matrix, inverted);
-    print_matrix(joined);
+
+	/*
+	* [A|I(n)] -> [I(n)|A^-1]
+	*
+	*/
     rref(joined);
-    print_matrix(joined);
-
-
     Matrix* out = subset(joined,
-                         inverted->rows,
+                         0,
                          inverted->cols,
                          inverted->rows,
                          inverted->cols);
@@ -372,7 +391,7 @@ multiply(Matrix* lhs, Matrix* rhs)
 Matrix*
 row_bind(Matrix* top, Matrix* bottom)
 {   
-    int i, j;
+    int i, j, bound;
 
     if( top->cols != bottom->cols )
     {
@@ -391,7 +410,8 @@ row_bind(Matrix* top, Matrix* bottom)
     }
 
     // TODO check boundaries
-    for(i = i + 1; i < i + bottom->rows; i++)
+	bound = i + bottom->rows;
+    for(; i < bound; i++)
     {
         for(j = 0; j < bottom->cols; j++)
         {
@@ -405,7 +425,7 @@ row_bind(Matrix* top, Matrix* bottom)
 Matrix*
 col_bind(Matrix* left, Matrix* right)
 {
-    int i, j;
+    int i, j, bound;
 
     if( left->cols != right->cols )
     {
@@ -424,11 +444,13 @@ col_bind(Matrix* left, Matrix* right)
     }
 
     // TODO check boundaries
+
+	bound = left->cols + right->cols;
     for(i = 0; i < right->rows; i++)
     {
-        for(j = j + 1; j < j + right->cols; j++)
+        for(j = left->cols; j < bound; j++)
         {
-            out->data[i][j] = right->data[i][j];
+            out->data[i][j] = right->data[i][j-(right->cols)];
         }
     }
     
